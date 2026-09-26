@@ -121,8 +121,8 @@ class MinimalDeviceBridge {
                 await this.device.selectConfiguration(1);
             }
 
-            // Locate bulk endpoints
-            let found = false;
+            // Intelligently find and claim available bulk interface (prioritizing ADB/Vendor interfaces)
+            let claimed = false;
             for (const iface of this.device.configuration.interfaces) {
                 for (const alt of iface.alternates) {
                     let inEp = null;
@@ -136,17 +136,25 @@ class MinimalDeviceBridge {
                     }
 
                     if (inEp && outEp) {
-                        this.interfaceNumber = iface.interfaceNumber;
-                        this.endpointIn = inEp.endpointNumber;
-                        this.endpointOut = outEp.endpointNumber;
-                        found = true;
-                        break;
+                        try {
+                            await this.device.claimInterface(iface.interfaceNumber);
+                            this.interfaceNumber = iface.interfaceNumber;
+                            this.endpointIn = inEp.endpointNumber;
+                            this.endpointOut = outEp.endpointNumber;
+                            claimed = true;
+                            break;
+                        } catch (claimErr) {
+                            // If this interface is locked (e.g. MTP), continue to next interface
+                            console.warn(`Interface #${iface.interfaceNumber} locked, checking next...`);
+                        }
                     }
                 }
-                if (found) break;
+                if (claimed) break;
             }
 
-            await this.device.claimInterface(this.interfaceNumber);
+            if (!claimed) {
+                throw new Error("Unable to claim USB interface. Ensure USB Debugging is ON or phone is in Fastboot mode.");
+            }
 
             // Update UI to Connected State
             this.dom.btnConnect.className = 'circle-btn connected';
