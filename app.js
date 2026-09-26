@@ -72,6 +72,11 @@ class RemoteUsbBridge {
     }
 
     initUI() {
+        if (window.location.host) {
+            const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            this.dom.serverUrl.value = `${wsProto}//${window.location.host}`;
+        }
+
         this.dom.btnConnectServer.addEventListener('click', () => this.connectRelayServer());
         this.dom.btnDisconnectServer.addEventListener('click', () => this.disconnectRelayServer());
         this.dom.btnPairDevice.addEventListener('click', () => this.pairDevice());
@@ -80,6 +85,9 @@ class RemoteUsbBridge {
             this.dom.consoleOutput.innerHTML = '';
             this.log('Console cleared.', 'system');
         });
+
+        // Automatically connect to the relay server on page load
+        setTimeout(() => this.connectRelayServer(), 300);
     }
 
     checkBrowserSupport() {
