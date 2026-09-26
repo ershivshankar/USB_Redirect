@@ -1,6 +1,6 @@
 /**
  * Zero-Dependency Standalone Node.js Web & WebSocket Relay Server
- * Runs out of the box with pure native Node.js (No npm install required)
+ * Supports Customer Portal (/) and Master Admin Terminal (/admin)
  */
 
 const http = require('http');
@@ -10,10 +10,18 @@ const crypto = require('crypto');
 
 const HTTP_PORT = process.env.PORT || 3000;
 
-// 1. Static Web Server (serves index.html, styles.css, app.js)
+// 1. Static Web Server (serves index.html, admin.html, styles.css, app.js)
 const server = http.createServer((req, res) => {
     let reqUrl = req.url.split('?')[0];
-    let filePath = path.join(__dirname, reqUrl === '/' ? 'index.html' : reqUrl);
+    let fileName = 'index.html';
+    
+    if (reqUrl === '/admin' || reqUrl === '/admin.html') {
+        fileName = 'admin.html';
+    } else if (reqUrl !== '/') {
+        fileName = reqUrl.replace(/^\//, '');
+    }
+
+    let filePath = path.join(__dirname, fileName);
     const ext = path.extname(filePath);
     
     let contentType = 'text/html';
@@ -34,6 +42,8 @@ const server = http.createServer((req, res) => {
 
 // 2. Zero-Dependency Native WebSocket Server
 const clients = new Set();
+const adminSockets = new Set();
+const sessions = new Map();
 
 server.on('upgrade', (req, socket, head) => {
     const key = req.headers['sec-websocket-key'];
@@ -61,15 +71,13 @@ server.on('upgrade', (req, socket, head) => {
     console.log(`[+] Client connected from ${clientIp}`);
 
     socket.on('data', (buffer) => {
-        // Parse WebSocket Frame
         if (buffer.length < 2) return;
         const firstByte = buffer[0];
         const opcode = firstByte & 0x0f;
 
         // 8 = Close frame
         if (opcode === 8) {
-            socket.end();
-            clients.delete(socket);
+            handleDisconnect(socket);
             return;
         }
 
@@ -98,30 +106,69 @@ server.on('upgrade', (req, socket, head) => {
             }
         }
 
-        // Handle Text / JSON
+        // Opcode 1: Text / Control Messages
         if (opcode === 1) {
             try {
                 const text = payload.toString('utf8');
-                console.log(`[CONTROL] ${text}`);
-                // Send ACK response
-                sendWsFrame(socket, JSON.stringify({ type: 'ACK', message: 'Ready for device streaming' }));
+                const json = JSON.parse(text);
+                
+                if (json.type === 'ADMIN_INIT') {
+                    adminSockets.add(socket);
+                    console.log(`[ADMIN] Master Admin Terminal connected`);
+                    return;
+                }
+
+                if (json.type === 'HANDSHAKE') {
+                    sessions.set(socket, { sessionId: json.sessionId, ip: clientIp });
+                    console.log(`[SESSION] Client ${json.sessionId} Active`);
+                    sendWsFrame(socket, JSON.stringify({ type: 'ACK', message: 'Connected to Relay' }));
+                    
+                    // Notify Admin Terminals
+                    broadcastToAdmins(JSON.stringify({
+                        type: 'CLIENT_CONNECTED',
+                        sessionId: json.sessionId,
+                        ip: clientIp
+                    }));
+                }
+
+                if (json.type === 'DEVICE_INFO') {
+                    console.log(`[DEVICE] ${json.productName} (VID: 0x${json.vid})`);
+                    broadcastToAdmins(JSON.stringify({
+                        type: 'DEVICE_PAIRED',
+                        sessionId: json.sessionId || 'CLIENT',
+                        productName: json.productName,
+                        vid: json.vid,
+                        pid: json.pid
+                    }));
+                }
             } catch (e) {}
         } else if (opcode === 2) {
-            // Binary USB payload
-            console.log(`[USB DATA] Received ${payload.length} bytes from remote device`);
+            // Opcode 2: Binary USB Data (Forward to Admin Terminals)
+            console.log(`[USB DATA] Received ${payload.length} bytes`);
+            broadcastBinaryToAdmins(payload);
         }
     });
 
     socket.on('close', () => {
-        clients.delete(socket);
-        console.log('[-] Client disconnected');
+        handleDisconnect(socket);
     });
 
-    socket.on('error', (err) => {
-        console.error(`[SOCKET ERR] ${err.message}`);
-        clients.delete(socket);
+    socket.on('error', () => {
+        handleDisconnect(socket);
     });
 });
+
+function handleDisconnect(socket) {
+    const s = sessions.get(socket);
+    if (s) {
+        broadcastToAdmins(JSON.stringify({ type: 'CLIENT_DISCONNECTED', sessionId: s.sessionId }));
+        sessions.delete(socket);
+    }
+    clients.delete(socket);
+    adminSockets.delete(socket);
+    try { socket.end(); } catch (e) {}
+    console.log('[-] Client disconnected');
+}
 
 function sendWsFrame(socket, text) {
     const payload = Buffer.from(text, 'utf8');
@@ -131,10 +178,45 @@ function sendWsFrame(socket, text) {
     socket.write(Buffer.concat([header, payload]));
 }
 
+function broadcastToAdmins(text) {
+    const payload = Buffer.from(text, 'utf8');
+    const header = Buffer.alloc(2);
+    header[0] = 0x81;
+    header[1] = payload.length;
+    const frame = Buffer.concat([header, payload]);
+    
+    for (const admin of adminSockets) {
+        try { admin.write(frame); } catch (e) {}
+    }
+}
+
+function broadcastBinaryToAdmins(binaryBuffer) {
+    let header;
+    if (binaryBuffer.length < 126) {
+        header = Buffer.alloc(2);
+        header[0] = 0x82; // Binary frame
+        header[1] = binaryBuffer.length;
+    } else if (binaryBuffer.length < 65536) {
+        header = Buffer.alloc(4);
+        header[0] = 0x82;
+        header[1] = 126;
+        header.writeUInt16BE(binaryBuffer.length, 2);
+    } else {
+        header = Buffer.alloc(10);
+        header[0] = 0x82;
+        header[1] = 127;
+        header.writeBigUInt64BE(BigInt(binaryBuffer.length), 2);
+    }
+    const frame = Buffer.concat([header, binaryBuffer]);
+    for (const admin of adminSockets) {
+        try { admin.write(frame); } catch (e) {}
+    }
+}
+
 server.listen(HTTP_PORT, () => {
     console.log(`\n==================================================`);
     console.log(` 🚀 WebUSB Remote Bridge Server is LIVE!`);
-    console.log(` 🌐 Web Portal:    http://localhost:${HTTP_PORT}`);
-    console.log(` 🔌 WebSocket:     ws://localhost:${HTTP_PORT}`);
+    console.log(` 🌐 Client Portal:    http://localhost:${HTTP_PORT}`);
+    console.log(` 💻 Admin Terminal:   http://localhost:${HTTP_PORT}/admin`);
     console.log(`==================================================\n`);
 });

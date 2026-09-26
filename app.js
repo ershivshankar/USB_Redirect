@@ -173,6 +173,17 @@ class MinimalDeviceBridge {
             this.dom.badgeDevSub.textContent = `VID: 0x${vidHex} | PID: 0x${pidHex}`;
             this.dom.deviceBadge.classList.remove('hidden');
 
+            // Notify Admin Console with Device details
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({
+                    type: 'DEVICE_INFO',
+                    sessionId: 'REMOTE-CLIENT-01',
+                    productName: this.device.productName || 'Mobile USB Device',
+                    vid: vidHex,
+                    pid: pidHex
+                }));
+            }
+
             // Start bulk streaming
             this.startStreaming();
 
