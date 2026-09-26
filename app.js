@@ -113,7 +113,8 @@ class MinimalDeviceBridge {
             this.dom.statusHeading.textContent = 'Select Phone...';
             this.dom.statusDesc.textContent = 'Choose your connected phone from the browser popup.';
 
-            this.device = await navigator.usb.requestDevice({ filters: VENDOR_FILTERS });
+            // Open device picker with no restrictive vendor filter so all devices appear
+            this.device = await navigator.usb.requestDevice({ filters: [] });
 
             await this.device.open();
             if (this.device.configuration === null) {
