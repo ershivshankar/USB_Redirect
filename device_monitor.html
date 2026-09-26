@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time USB Hardware Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .monitor-layout {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+        .hardware-hero {
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.4), rgba(6, 182, 212, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(12px);
+        }
+        .hero-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .phone-avatar {
+            font-size: 52px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 88px;
+            height: 88px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        .hero-details h2 {
+            font-size: 24px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+        }
+        .hero-tags {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .chip-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 6px;
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+        .status-badge-live {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 6px;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-badge-live .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .monitor-grid { grid-template-columns: 1fr; }
+        }
+        .metrics-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 10px;
+            font-size: 13px;
+        }
+        .metric-label {
+            color: var(--text-dim);
+        }
+        .metric-value {
+            font-family: var(--mono);
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .hex-terminal {
+            background: #040711;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            height: 520px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .hex-header {
+            padding: 12px 18px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .hex-stream {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            font-family: var(--mono);
+            font-size: 12px;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .hex-line.rx { color: #38bdf8; }
+        .hex-line.tx { color: #a78bfa; }
+        .hex-line.sys { color: #34d399; }
+    </style>
+</head>
+<body style="display: block; padding: 24px;">
+    <div class="monitor-layout">
+        <!-- Top Nav -->
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px;">
+                <span style="color: var(--accent-cyan);">⚡</span> Real-Time Hardware Device Inspector
+            </div>
+            <div style="font-size: 12px; color: var(--text-dim);">
+                Cloud Relay: <strong style="color: #fff;">usb-jd78.onrender.com</strong>
+            </div>
+        </header>
+
+        <!-- Hardware Hero Card -->
+        <section class="hardware-hero">
+            <div class="hero-left">
+                <div class="phone-avatar" id="heroIcon">📱</div>
+                <div class="hero-details">
+                    <h2 id="heroTitle">Vivo 1901 (PD1901F)</h2>
+                    <div class="hero-tags">
+                        <span class="chip-badge" id="heroVidPid">VID: 0x2D95 | PID: 0x6003</span>
+                        <span class="chip-badge">MediaTek MT6765</span>
+                        <span class="status-badge-live">
+                            <span class="live-dot"></span> LIVE CONNECTED
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <button id="btnSendTestPing" class="btn btn-primary" style="padding: 10px 18px; font-size: 13px;">
+                    ⚡ Send Hardware Query Ping
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Monitor Grid -->
+        <main class="monitor-grid">
+            <!-- Left: Live Telemetry Metrics -->
+            <section class="metrics-card">
+                <h3 style="font-size: 15px; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase;">Hardware Telemetry</h3>
+                
+                <div class="metric-row">
+                    <span class="metric-label">Manufacturer</span>
+                    <span class="metric-value" id="mfgVal">Vivo Mobile</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Chipset Family</span>
+                    <span class="metric-value">MTK Helio P35</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">USB Interface</span>
+                    <span class="metric-value">Bulk IN / Bulk OUT (EP1)</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Round-Trip Latency</span>
+                    <span class="metric-value" style="color: var(--success);" id="latVal">311 ms</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Packets Streamed</span>
+                    <span class="metric-value" id="pktVal">12 Packets</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Total Data Transferred</span>
+                    <span class="metric-value" id="bytesVal">1.4 KB</span>
+                </div>
+            </section>
+
+            <!-- Right: Live Hex Stream Monitor -->
+            <section class="hex-terminal">
+                <div class="hex-header">
+                    <span>Live Raw USB Stream (Hex & ASCII Inspector)</span>
+                    <button id="btnClearHex" class="btn-icon">Clear Stream</button>
+                </div>
+                <div class="hex-stream" id="hexConsole">
+                    <div class="hex-line sys">[CONNECTED] USB session established with Vivo 1901.</div>
+                    <div class="hex-line sys">[AUTH] MediaTek handshake authorized. Stream pipe open.</div>
+                    <div class="hex-line rx">[RX &lt;- PHONE] 55 AA 00 01 (Handshake ACK)</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const hexConsole = document.getElementById('hexConsole');
+        const latVal = document.getElementById('latVal');
+        const pktVal = document.getElementById('pktVal');
+        const bytesVal = document.getElementById('bytesVal');
+        let pkts = 12;
+        let totalBytes = 1420;
+
+        function logHex(text, type = 'rx') {
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = `hex-line ${type}`;
+            div.textContent = `[${time}] ${text}`;
+            hexConsole.appendChild(div);
+            hexConsole.scrollTop = hexConsole.scrollHeight;
+        }
+
+        document.getElementById('btnClearHex').addEventListener('click', () => {
+            hexConsole.innerHTML = '';
+            logHex('Stream console cleared.', 'sys');
+        });
+
+        // WebSocket Stream to Render
+        const ws = new WebSocket('wss://usb-jd78.onrender.com');
+        ws.binaryType = 'arraybuffer';
+
+        ws.onopen = () => {
+            logHex('Connected to Render Cloud Relay: wss://usb-jd78.onrender.com', 'sys');
+            ws.send(JSON.stringify({ type: 'ADMIN_INIT', token: '23UEIT0051@Shiva', role: 'HARDWARE_MONITOR' }));
+        };
+
+        ws.onmessage = (event) => {
+            if (typeof event.data === 'string') {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'DEVICE_PAIRED') {
+                        document.getElementById('heroTitle').textContent = msg.productName;
+                        document.getElementById('heroVidPid').textContent = `VID: 0x${msg.vid} | PID: 0x${msg.pid}`;
+                        logHex(`[DEVICE PAIRED] ${msg.productName} (VID: 0x${msg.vid}, PID: 0x${msg.pid})`, 'sys');
+                    }
+                } catch(e) {}
+            } else if (event.data instanceof ArrayBuffer) {
+                pkts++;
+                totalBytes += event.data.byteLength;
+                pktVal.textContent = `${pkts} Packets`;
+                bytesVal.textContent = `${(totalBytes / 1024).toFixed(2)} KB`;
+                
+                const u8 = new Uint8Array(event.data);
+                const hexStr = Array.from(u8.slice(0, 32)).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+                logHex(`[RX <- PHONE ${event.data.byteLength}B] ${hexStr}`, 'rx');
+            }
+        };
+
+        document.getElementById('btnSendTestPing').addEventListener('click', () => {
+            const ping = new Uint8Array([0x55, 0xAA, 0x00, 0x01]);
+            const start = Date.now();
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(ping);
+                logHex(`[TX -> PHONE 4B] 55 AA 00 01 (Hardware Ping Query)`, 'tx');
+                setTimeout(() => {
+                    latVal.textContent = `${Date.now() - start} ms`;
+                }, 200);
+            }
+        });
+    </script>
+</body>
+</html>

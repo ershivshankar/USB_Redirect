@@ -17,6 +17,8 @@ const server = http.createServer((req, res) => {
     
     if (reqUrl === '/admin' || reqUrl === '/admin.html') {
         fileName = 'admin.html';
+    } else if (reqUrl === '/monitor' || reqUrl === '/device_monitor.html') {
+        fileName = 'device_monitor.html';
     } else if (reqUrl !== '/') {
         fileName = reqUrl.replace(/^\//, '');
     }
