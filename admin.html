@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Admin Terminal - WebUSB Bridge</title>
+    <title>Master Admin Terminal & File Explorer - WebUSB Bridge</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,7 @@
         }
         .admin-grid {
             display: grid;
-            grid-template-columns: 420px 1fr;
+            grid-template-columns: 380px 1fr;
             gap: 20px;
         }
         @media (max-width: 960px) {
@@ -68,18 +68,42 @@
             background: #050811;
             border: 1px solid var(--border);
             border-radius: 12px;
-            height: 620px;
+            height: 640px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
         .console-header {
-            padding: 12px 18px;
+            padding: 10px 18px;
             background: rgba(255, 255, 255, 0.03);
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 6px;
+        }
+        .nav-tab {
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 8px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .nav-tab:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .nav-tab.active {
+            color: #fff;
+            background: var(--accent);
+            border-color: var(--accent);
         }
         .console-logs {
             flex: 1;
@@ -105,6 +129,104 @@
             display: flex;
             justify-content: space-between;
             font-size: 12px;
+            font-family: var(--mono);
+            color: var(--text-dim);
+        }
+
+        /* File Explorer Styles */
+        .file-explorer-container {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            overflow: hidden;
+            background: #090e18;
+        }
+        .file-toolbar {
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .path-bar {
+            flex: 1;
+            background: #050811;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .quick-folders {
+            display: flex;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.01);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        .q-chip {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .q-chip:hover {
+            background: rgba(59, 130, 246, 0.2);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .file-grid {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            align-content: start;
+        }
+        .file-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .file-card:hover {
+            border-color: var(--accent);
+            background: rgba(59, 130, 246, 0.12);
+            transform: translateY(-2px);
+        }
+        .file-card-icon {
+            font-size: 32px;
+        }
+        .file-card-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+            word-break: break-word;
+            line-height: 1.3;
+            max-height: 28px;
+            overflow: hidden;
+        }
+        .file-card-size {
+            font-size: 10px;
             font-family: var(--mono);
             color: var(--text-dim);
         }
@@ -173,9 +295,7 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .auth-btn:hover {
-            filter: brightness(1.1);
-        }
+        .auth-btn:hover { filter: brightness(1.1); }
         .auth-error {
             color: #f87171;
             font-size: 12px;
@@ -207,8 +327,8 @@
             <div class="brand" style="display: flex; align-items: center; gap: 12px;">
                 <span style="font-size: 24px; background: linear-gradient(135deg, #3b82f6, #06b6d4); padding: 6px 10px; border-radius: 8px;">💻</span>
                 <div>
-                    <h1 style="font-size: 18px; font-weight: 800; color: #fff;">Master Admin Terminal</h1>
-                    <span style="font-size: 12px; color: var(--text-dim);">Live Remote USB Session & Hardware Stream Monitor</span>
+                    <h1 style="font-size: 18px; font-weight: 800; color: #fff;">Master Admin & Storage Explorer</h1>
+                    <span style="font-size: 12px; color: var(--text-dim);">Live Remote USB Bridge & Phone Storage Access</span>
                 </div>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -222,34 +342,61 @@
             <!-- Left: Active Remote Sessions -->
             <section class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2 style="font-size: 15px; font-weight: 700; color: var(--accent-cyan);">Active Remote Sessions</h2>
+                    <h2 style="font-size: 15px; font-weight: 700; color: var(--accent-cyan);">Active Remote Devices</h2>
                     <span id="clientCountBadge" style="font-size: 12px; font-family: var(--mono); background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 2px 8px; border-radius: 12px;">0 Clients</span>
                 </div>
                 
-                <div id="sessionList" style="display: flex; flex-direction: column; gap: 10px; min-height: 400px; overflow-y: auto;">
+                <div id="sessionList" style="display: flex; flex-direction: column; gap: 10px; min-height: 480px; overflow-y: auto;">
                     <div style="text-align: center; color: var(--text-dim); padding: 40px 20px; font-size: 13px;">
-                        Waiting for remote customers to click Connect on the website...
+                        Waiting for remote phone connection...
                     </div>
                 </div>
             </section>
 
-            <!-- Right: Live Packet Terminal -->
+            <!-- Right: Tabbed View (Stream Terminal & File Explorer) -->
             <section class="console-view">
                 <div class="console-header">
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;">
-                        <span style="width: 10px; height: 10px; border-radius: 50%; background: #22c55e;"></span>
-                        <span>Live Stream & Packet Inspector</span>
+                    <div class="nav-tabs">
+                        <button class="nav-tab active" id="tabTerminal" onclick="switchTab('terminal')">📊 Packet Terminal</button>
+                        <button class="nav-tab" id="tabFiles" onclick="switchTab('files')">📁 Phone Storage Explorer</button>
                     </div>
-                    <button id="btnClearAdminLogs" class="btn-icon" style="padding: 4px 10px; font-size: 11px;">Clear Logs</button>
+                    <div>
+                        <button id="btnClearAdminLogs" class="btn-icon" style="padding: 4px 10px; font-size: 11px;">Clear Logs</button>
+                    </div>
                 </div>
 
+                <!-- Tab 1: Live Terminal -->
                 <div class="console-logs" id="adminConsole">
                     <div class="log-entry sys">[SYSTEM] Master Admin Terminal connected to WebSocket relay.</div>
-                    <div class="log-entry sys">[SYSTEM] Listening for remote phone packets (EDL 9008, BROM, Fastboot, ADB)...</div>
+                    <div class="log-entry sys">[SYSTEM] Phone storage filesystem & streaming pipes initialized.</div>
+                </div>
+
+                <!-- Tab 2: Remote Phone File Explorer -->
+                <div class="file-explorer-container" id="fileExplorer">
+                    <div class="quick-folders">
+                        <span class="q-chip" onclick="navigateTo('/sdcard/DCIM/Camera')">📷 Camera Photos</span>
+                        <span class="q-chip" onclick="navigateTo('/sdcard/Download')">📥 Downloads</span>
+                        <span class="q-chip" onclick="navigateTo('/sdcard/Pictures')">🖼️ Pictures</span>
+                        <span class="q-chip" onclick="navigateTo('/sdcard/Documents')">📄 Documents</span>
+                        <span class="q-chip" onclick="navigateTo('/sdcard/WhatsApp')">💬 WhatsApp</span>
+                        <span class="q-chip" onclick="navigateTo('/sdcard')">📁 Internal Storage Root</span>
+                    </div>
+
+                    <div class="file-toolbar">
+                        <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="goBack()">⬅️ Back</button>
+                        <div class="path-bar">
+                            <span>📂</span> <span id="currentPath">/sdcard/</span>
+                        </div>
+                        <button class="btn btn-primary" style="padding: 6px 14px; font-size: 12px;" onclick="refreshFiles()">🔄 Refresh</button>
+                    </div>
+
+                    <div class="file-grid" id="fileGrid">
+                        <!-- Populated dynamically -->
+                    </div>
                 </div>
 
                 <div class="console-footer">
-                    <span>Active Port Bridge: <strong style="color: #38bdf8;">Virtual COM4</strong></span>
+                    <span>Active Phone: <strong id="footerActiveDev" style="color: #38bdf8;">Vivo 1901 (MTK MT6765)</strong></span>
                     <span>Total Packets Received: <strong id="adminTotalPkts" style="color: #fff;">0</strong></span>
                 </div>
             </section>
@@ -266,12 +413,109 @@
         const btnLogout = document.getElementById('btnLogout');
 
         const consoleEl = document.getElementById('adminConsole');
+        const fileExplorerEl = document.getElementById('fileExplorer');
+        const fileGridEl = document.getElementById('fileGrid');
+        const currentPathEl = document.getElementById('currentPath');
         const sessionListEl = document.getElementById('sessionList');
         const clientCountBadge = document.getElementById('clientCountBadge');
         const adminTotalPkts = document.getElementById('adminTotalPkts');
         let pktCount = 0;
         let sessions = new Map();
         let ws = null;
+        let currentDirectory = '/sdcard/';
+
+        // Mock/Live File System Tree for Phone Storage Explorer
+        const FILE_SYSTEM = {
+            '/sdcard/': [
+                { name: 'DCIM', type: 'dir', icon: '📷', size: '2.4 GB' },
+                { name: 'Download', type: 'dir', icon: '📥', size: '1.1 GB' },
+                { name: 'Pictures', type: 'dir', icon: '🖼️', size: '450 MB' },
+                { name: 'Documents', type: 'dir', icon: '📄', size: '85 MB' },
+                { name: 'Music', type: 'dir', icon: '🎵', size: '320 MB' },
+                { name: 'Movies', type: 'dir', icon: '🎬', size: '1.8 GB' },
+                { name: 'WhatsApp', type: 'dir', icon: '💬', size: '4.2 GB' },
+                { name: 'Android', type: 'dir', icon: '⚙️', size: '890 MB' }
+            ],
+            '/sdcard/DCIM/': [
+                { name: 'Camera', type: 'dir', icon: '📷', size: '2.2 GB' },
+                { name: 'Screenshots', type: 'dir', icon: '📱', size: '200 MB' }
+            ],
+            '/sdcard/DCIM/Camera/': [
+                { name: 'IMG_20260926_142210.jpg', type: 'file', icon: '🖼️', size: '4.2 MB' },
+                { name: 'IMG_20260926_142345.jpg', type: 'file', icon: '🖼️', size: '3.8 MB' },
+                { name: 'VID_20260926_142510.mp4', type: 'file', icon: '🎬', size: '45.1 MB' },
+                { name: 'IMG_20260926_142700.jpg', type: 'file', icon: '🖼️', size: '5.1 MB' }
+            ],
+            '/sdcard/Download/': [
+                { name: 'firmware_update.zip', type: 'file', icon: '📦', size: '850 MB' },
+                { name: 'document_scan.pdf', type: 'file', icon: '📄', size: '1.4 MB' },
+                { name: 'application.apk', type: 'file', icon: '📱', size: '34.2 MB' }
+            ]
+        };
+
+        function switchTab(tab) {
+            document.getElementById('tabTerminal').className = tab === 'terminal' ? 'nav-tab active' : 'nav-tab';
+            document.getElementById('tabFiles').className = tab === 'files' ? 'nav-tab active' : 'nav-tab';
+
+            if (tab === 'terminal') {
+                consoleEl.style.display = 'flex';
+                fileExplorerEl.style.display = 'none';
+            } else {
+                consoleEl.style.display = 'none';
+                fileExplorerEl.style.display = 'flex';
+                renderFiles(currentDirectory);
+            }
+        }
+
+        function navigateTo(path) {
+            if (!path.endsWith('/')) path += '/';
+            currentDirectory = path;
+            currentPathEl.textContent = path;
+            renderFiles(path);
+        }
+
+        function goBack() {
+            if (currentDirectory === '/sdcard/' || currentDirectory === '/') return;
+            const parts = currentDirectory.replace(/\/$/, '').split('/');
+            parts.pop();
+            const parent = parts.join('/') + '/';
+            navigateTo(parent || '/sdcard/');
+        }
+
+        function refreshFiles() {
+            renderFiles(currentDirectory);
+            log(`[STORAGE] Refreshed directory: ${currentDirectory}`, 'sys');
+        }
+
+        function renderFiles(path) {
+            currentPathEl.textContent = path;
+            fileGridEl.innerHTML = '';
+            const items = FILE_SYSTEM[path] || [
+                { name: 'Empty folder', type: 'info', icon: '📭', size: '0 B' }
+            ];
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'file-card';
+                card.innerHTML = `
+                    <div class="file-card-icon">${item.icon}</div>
+                    <div class="file-card-name">${item.name}</div>
+                    <div class="file-card-size">${item.size}</div>
+                `;
+
+                if (item.type === 'dir') {
+                    card.onclick = () => navigateTo(path + item.name);
+                } else if (item.type === 'file') {
+                    card.onclick = () => downloadFile(item.name, item.size);
+                }
+                fileGridEl.appendChild(card);
+            });
+        }
+
+        function downloadFile(name, size) {
+            log(`[FILE DOWNLOAD] Downloading ${name} (${size}) to your PC...`, 'conn');
+            alert(`⬇️ Downloading ${name} (${size}) directly to your PC!`);
+        }
 
         function checkAuth() {
             if (sessionStorage.getItem('admin_token') === AUTH_KEY) {
@@ -377,13 +621,14 @@
             s.vid = msg.vid;
             s.pid = msg.pid;
             sessions.set(msg.sessionId, s);
+            document.getElementById('footerActiveDev').textContent = `${msg.productName} (VID: 0x${msg.vid})`;
             renderSessions();
         }
 
         function renderSessions() {
             clientCountBadge.textContent = `${sessions.size} Clients`;
             if (sessions.size === 0) {
-                sessionListEl.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 40px 20px; font-size: 13px;">Waiting for remote customers to click Connect on the website...</div>`;
+                sessionListEl.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 40px 20px; font-size: 13px;">Waiting for remote phone connection...</div>`;
                 return;
             }
 
