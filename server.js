@@ -113,8 +113,15 @@ server.on('upgrade', (req, socket, head) => {
                 const json = JSON.parse(text);
                 
                 if (json.type === 'ADMIN_INIT') {
-                    adminSockets.add(socket);
-                    console.log(`[ADMIN] Master Admin Terminal connected`);
+                    if (json.token === '23UEIT0051@Shiva') {
+                        adminSockets.add(socket);
+                        console.log(`[ADMIN AUTH] Master Admin Terminal Authenticated & Connected`);
+                        sendWsFrame(socket, JSON.stringify({ type: 'ACK', message: 'Admin Terminal Authenticated' }));
+                    } else {
+                        console.warn(`[ADMIN AUTH] Unauthorized access attempt blocked from ${clientIp}`);
+                        sendWsFrame(socket, JSON.stringify({ type: 'AUTH_FAILED', message: 'Invalid Admin Token' }));
+                        socket.end();
+                    }
                     return;
                 }
 

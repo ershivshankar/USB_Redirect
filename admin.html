@@ -108,10 +108,100 @@
             font-family: var(--mono);
             color: var(--text-dim);
         }
+
+        /* Auth Modal */
+        .auth-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 8, 17, 0.92);
+            backdrop-filter: blur(16px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .auth-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 400px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        }
+        .auth-icon {
+            font-size: 42px;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .auth-input {
+            width: 100%;
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #fff;
+            font-family: var(--mono);
+            font-size: 14px;
+            outline: none;
+            text-align: center;
+            letter-spacing: 0.1em;
+        }
+        .auth-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+        }
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #3b82f6, #06b6d4);
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .auth-btn:hover {
+            filter: brightness(1.1);
+        }
+        .auth-error {
+            color: #f87171;
+            font-size: 12px;
+            font-weight: 600;
+            display: none;
+        }
     </style>
 </head>
 <body style="display: block; padding: 24px;">
-    <div class="admin-layout">
+
+    <!-- Password Auth Overlay -->
+    <div class="auth-overlay" id="authOverlay">
+        <div class="auth-card">
+            <div class="auth-icon">🔒</div>
+            <div style="text-align: center;">
+                <h2 style="font-size: 18px; font-weight: 800; color: #fff;">Admin Authentication</h2>
+                <p style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">Enter Master Security Key to access terminal</p>
+            </div>
+            <input type="password" id="authPassword" class="auth-input" placeholder="Enter Password" autofocus>
+            <div class="auth-error" id="authError">Invalid Security Password</div>
+            <button id="btnUnlockAdmin" class="auth-btn">Unlock Terminal</button>
+        </div>
+    </div>
+
+    <!-- Protected Admin Terminal Layout -->
+    <div class="admin-layout" id="adminMainContent" style="display: none;">
         <!-- Top Nav -->
         <header class="top-bar" style="background: var(--card-bg); border: 1px solid var(--border); padding: 16px 24px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
             <div class="brand" style="display: flex; align-items: center; gap: 12px;">
@@ -123,7 +213,7 @@
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <span class="session-tag" id="masterStatus">Relay Server Active</span>
-                <a href="/" target="_blank" class="btn btn-outline" style="text-decoration: none; padding: 6px 12px; font-size: 12px;">Open Client Portal ↗</a>
+                <button id="btnLogout" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px; cursor: pointer;">Logout 🔒</button>
             </div>
         </header>
 
@@ -167,12 +257,56 @@
     </div>
 
     <script>
+        const AUTH_KEY = "23UEIT0051@Shiva";
+        const authOverlay = document.getElementById('authOverlay');
+        const authPassword = document.getElementById('authPassword');
+        const authError = document.getElementById('authError');
+        const btnUnlockAdmin = document.getElementById('btnUnlockAdmin');
+        const adminMainContent = document.getElementById('adminMainContent');
+        const btnLogout = document.getElementById('btnLogout');
+
         const consoleEl = document.getElementById('adminConsole');
         const sessionListEl = document.getElementById('sessionList');
         const clientCountBadge = document.getElementById('clientCountBadge');
         const adminTotalPkts = document.getElementById('adminTotalPkts');
         let pktCount = 0;
         let sessions = new Map();
+        let ws = null;
+
+        function checkAuth() {
+            if (sessionStorage.getItem('admin_token') === AUTH_KEY) {
+                authOverlay.style.display = 'none';
+                adminMainContent.style.display = 'flex';
+                initWebSocket();
+            } else {
+                authOverlay.style.display = 'flex';
+                adminMainContent.style.display = 'none';
+            }
+        }
+
+        btnUnlockAdmin.addEventListener('click', doAuth);
+        authPassword.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') doAuth();
+        });
+
+        function doAuth() {
+            const val = authPassword.value.trim();
+            if (val === AUTH_KEY) {
+                sessionStorage.setItem('admin_token', AUTH_KEY);
+                authError.style.display = 'none';
+                checkAuth();
+            } else {
+                authError.style.display = 'block';
+                authPassword.value = '';
+                authPassword.focus();
+            }
+        }
+
+        btnLogout.addEventListener('click', () => {
+            sessionStorage.removeItem('admin_token');
+            if (ws) ws.close();
+            location.reload();
+        });
 
         function log(msg, type = 'data') {
             const time = new Date().toLocaleTimeString();
@@ -188,43 +322,44 @@
             log('Admin console cleared.', 'sys');
         });
 
-        // WebSocket Connection to Backend
-        const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${proto}//${window.location.host || 'localhost:3000'}`;
-        const ws = new WebSocket(wsUrl);
-        ws.binaryType = 'arraybuffer';
+        function initWebSocket() {
+            const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${proto}//${window.location.host || 'localhost:3000'}`;
+            ws = new WebSocket(wsUrl);
+            ws.binaryType = 'arraybuffer';
 
-        ws.onopen = () => {
-            log('Connected to Master Relay Server.', 'conn');
-            ws.send(JSON.stringify({ type: 'ADMIN_INIT', role: 'MASTER_CONSOLE' }));
-        };
+            ws.onopen = () => {
+                log('Authenticated & connected to Master Relay Server.', 'conn');
+                ws.send(JSON.stringify({ type: 'ADMIN_INIT', token: AUTH_KEY, role: 'MASTER_CONSOLE' }));
+            };
 
-        ws.onmessage = (event) => {
-            if (typeof event.data === 'string') {
-                try {
-                    const msg = JSON.parse(event.data);
-                    if (msg.type === 'CLIENT_CONNECTED') {
-                        log(`[NEW CLIENT] Remote IP: ${msg.ip} | Session: ${msg.sessionId}`, 'conn');
-                        addSession(msg);
-                    } else if (msg.type === 'CLIENT_DISCONNECTED') {
-                        log(`[DISCONNECT] Client ${msg.sessionId} left`, 'warn');
-                        removeSession(msg.sessionId);
-                    } else if (msg.type === 'DEVICE_PAIRED') {
-                        log(`[DEVICE PAIRED] ${msg.productName} (VID: 0x${msg.vid} | PID: 0x${msg.pid})`, 'dev');
-                        updateSessionDevice(msg);
-                    } else {
-                        log(`[CTRL] ${event.data}`, 'sys');
+            ws.onmessage = (event) => {
+                if (typeof event.data === 'string') {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.type === 'CLIENT_CONNECTED') {
+                            log(`[NEW CLIENT] Remote IP: ${msg.ip} | Session: ${msg.sessionId}`, 'conn');
+                            addSession(msg);
+                        } else if (msg.type === 'CLIENT_DISCONNECTED') {
+                            log(`[DISCONNECT] Client ${msg.sessionId} left`, 'warn');
+                            removeSession(msg.sessionId);
+                        } else if (msg.type === 'DEVICE_PAIRED') {
+                            log(`[DEVICE PAIRED] ${msg.productName} (VID: 0x${msg.vid} | PID: 0x${msg.pid})`, 'dev');
+                            updateSessionDevice(msg);
+                        } else {
+                            log(`[CTRL] ${event.data}`, 'sys');
+                        }
+                    } catch(e) {
+                        log(event.data, 'sys');
                     }
-                } catch(e) {
-                    log(event.data, 'sys');
+                } else if (event.data instanceof ArrayBuffer) {
+                    pktCount++;
+                    adminTotalPkts.textContent = pktCount;
+                    const len = event.data.byteLength;
+                    log(`[USB DATA RX] Streamed ${len} bytes from remote device`, 'data');
                 }
-            } else if (event.data instanceof ArrayBuffer) {
-                pktCount++;
-                adminTotalPkts.textContent = pktCount;
-                const len = event.data.byteLength;
-                log(`[USB DATA RX] Streamed ${len} bytes from remote device`, 'data');
-            }
-        };
+            };
+        }
 
         function addSession(msg) {
             sessions.set(msg.sessionId, msg);
@@ -268,6 +403,9 @@
                 sessionListEl.appendChild(item);
             });
         }
+
+        // Run check on load
+        checkAuth();
     </script>
 </body>
 </html>
