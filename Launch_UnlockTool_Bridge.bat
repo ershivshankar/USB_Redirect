@@ -1,9 +1,10 @@
 @echo off
-title WebUSB Remote UnlockTool Auto-Bridge
+setlocal enabledelayedexpansion
+title WebUSB Remote Bridge Engine
 color 0B
 
 echo ======================================================================
-echo    ⚡ WebUSB Remote UnlockTool Auto-Bridge ⚡
+echo    WebUSB Remote Device Bridge Engine
 echo    Cloud Relay: wss://usb-jd78.onrender.com
 echo ======================================================================
 echo.
@@ -24,26 +25,16 @@ start /B node "%~dp0local_bridge.js" > "%~dp0bridge_runtime.log" 2>&1
 :: Wait 2 seconds for WebSocket handshake
 timeout /t 2 /nobreak >nul
 
-echo [+] Bridge is ACTIVE & connected to Render Cloud!
+echo [+] Bridge is ACTIVE and connected to Render Cloud!
 echo [+] Listening for remote phone packets (Vivo, Samsung, Xiaomi, etc.)
 echo.
 echo ======================================================================
-echo  📱 READY IN UNLOCKTOOL:
-echo  1. Open UnlockTool
-echo  2. Select your Brand & Model (e.g. VIVO -> Y15 / Y12)
-echo  3. Select Port: COM4 / 127.0.0.1:9008
-echo  4. Click [BROM] / [EDL] Unlock!
+echo  DEVICE STATUS:
+echo  1. Remote phone traffic is bridged to: 127.0.0.1:9008
+echo  2. Use your Flasher / Servicing Tool to connect to port 9008 or COM
+echo  3. Admin Dashboard: https://usb-jd78.onrender.com/admin
 echo ======================================================================
 echo.
-
-:: 3. Launch UnlockTool if present
-if exist "F:\PU\UnlockTool_Clean_Project\UnlockToolPRO.exe" (
-    echo [*] Launching UnlockTool PRO...
-    start "" "F:\PU\UnlockTool_Clean_Project\UnlockToolPRO.exe"
-) else (
-    echo [i] UnlockTool is ready to run.
-)
-
-echo [i] Keep this window open while servicing remote phones.
+echo [i] Keep this terminal window open while servicing remote devices.
 echo.
 pause
