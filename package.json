@@ -1,0 +1,12 @@
+{
+  "name": "webusb-remote-bridge",
+  "version": "1.0.0",
+  "description": "Universal WebUSB Remote Device Portal & WebSocket Packet Relay",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.21.3"
+  }
+}

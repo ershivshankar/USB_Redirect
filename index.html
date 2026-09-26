@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal WebUSB Remote Device Portal</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="top-bar">
+            <div class="brand">
+                <div class="logo-icon">⚡</div>
+                <div class="brand-text">
+                    <h1>WebUSB Remote Device Bridge</h1>
+                    <span class="subtext">Centralized Flashing & Diagnostics Portal</span>
+                </div>
+            </div>
+            <div class="header-badges">
+                <div class="status-pill" id="webusb-status">
+                    <span class="dot"></span>
+                    <span class="label">WebUSB: Checking...</span>
+                </div>
+                <div class="status-pill" id="server-status">
+                    <span class="dot"></span>
+                    <span class="label">Relay: Disconnected</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="workspace-grid">
+            <!-- Left Panel: Connection & Device Controls -->
+            <section class="card panel-controls">
+                <div class="card-header">
+                    <h2>1. Relay Server Connection</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="serverUrl">Bridge WebSocket URL</label>
+                        <input type="text" id="serverUrl" value="ws://localhost:3000" placeholder="ws://localhost:3000">
+                    </div>
+                    <div class="form-group">
+                        <label for="sessionId">Session Token / Key</label>
+                        <input type="text" id="sessionId" value="SESSION-9008-PRO" placeholder="Enter session identifier">
+                    </div>
+                    <div class="action-buttons">
+                        <button id="btnConnectServer" class="btn btn-primary">Connect Relay</button>
+                        <button id="btnDisconnectServer" class="btn btn-outline" disabled>Disconnect</button>
+                    </div>
+                </div>
+
+                <div class="card-header mt-4">
+                    <h2>2. Connect Hardware Device</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="chipsetFilter">Target Mode Filter</label>
+                        <select id="chipsetFilter">
+                            <option value="all">Auto Detect (All Vendors)</option>
+                            <option value="qualcomm">Qualcomm (EDL 9008 - VID: 0x05C6)</option>
+                            <option value="mediatek">MediaTek (BROM / Preloader - VID: 0x0E8D)</option>
+                            <option value="fastboot">Android Fastboot (VID: 0x18D1 / Any)</option>
+                            <option value="samsung">Samsung Mobile USB (VID: 0x04E8)</option>
+                            <option value="unisoc">Unisoc / Spreadtrum (VID: 0x1782)</option>
+                            <option value="serial">Web Serial / Virtual COM Fallback</option>
+                        </select>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button id="btnPairDevice" class="btn btn-accent">
+                            <span class="icon">🔌</span> Pair & Connect Device
+                        </button>
+                        <button id="btnReleaseDevice" class="btn btn-outline" disabled>Release USB</button>
+                    </div>
+
+                    <!-- Connected Device Details Card -->
+                    <div class="device-info-box" id="deviceInfoBox">
+                        <div class="info-row">
+                            <span class="info-title">Device:</span>
+                            <span class="info-val" id="devName">No device paired</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-title">VID / PID:</span>
+                            <span class="info-val" id="devVidPid">-- : --</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-title">Endpoints:</span>
+                            <span class="info-val" id="devEndpoints">None</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-title">Transfer Mode:</span>
+                            <span class="info-val" id="devTransferMode">Idle</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Live Logs & Packet Monitor -->
+            <section class="card panel-terminal">
+                <div class="card-header terminal-header">
+                    <div class="terminal-title">
+                        <span class="terminal-dot red"></span>
+                        <span class="terminal-dot yellow"></span>
+                        <span class="terminal-dot green"></span>
+                        <span>Stream Monitor & Diagnostic Console</span>
+                    </div>
+                    <div class="terminal-actions">
+                        <button id="btnClearLogs" class="btn-icon" title="Clear console">Clear</button>
+                    </div>
+                </div>
+                <div class="terminal-body" id="consoleOutput">
+                    <div class="log-line system">[SYSTEM] WebUSB Remote Bridge initialized.</div>
+                    <div class="log-line info">[INFO] Supported browsers: Google Chrome, Microsoft Edge, Brave, Opera.</div>
+                    <div class="log-line tip">[TIP] Ensure the target phone is in EDL (9008), BROM, or Fastboot mode before pairing.</div>
+                </div>
+                <div class="terminal-footer">
+                    <div class="byte-counters">
+                        <span>TX: <strong id="txBytes">0 B</strong></span>
+                        <span>RX: <strong id="rxBytes">0 B</strong></span>
+                        <span>Packets: <strong id="pktCount">0</strong></span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
